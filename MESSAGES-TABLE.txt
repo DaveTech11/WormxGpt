@@ -1,0 +1,23 @@
+CHAT MESSAGES IN THEIR OWN DATABASE TABLE
+=========================================
+Code: msgstore.mjs (logic) + store.mjs (wiring). Tests: tests/messagesTable.test.mjs (runs with no database, uses a fake pg).
+
+What changed
+  Before: every save rewrote ONE big JSON row holding users, chats, orders and every message.
+  Now:    messages are one row each in table xyron_messages. The main row (xyron_state) holds everything else.
+          A save writes only the messages that were added, edited or deleted. server.mjs is unchanged.
+  Both databases (Render + Supabase mirror) get the table.
+
+Moving over
+  Nothing to do. The first save after you deploy copies all existing messages into the table and removes them from the
+  main row. The table is created automatically.
+
+Safety
+  - If the table cannot be written, that save uses the old format (messages inside the main row). No chat is lost.
+  - If the table cannot be READ at start-up, the server retries instead of starting with empty chats.
+  - A save that would delete ALL messages (when more than 20 exist) is refused for the table.
+  - Marker `messagesInBlob` in the main row says where the messages are: true = inside it, false = in the table.
+
+Going back (switch off)
+  Set the environment variable MESSAGES_TABLE=0 on Render and redeploy. The next save writes the old format again (all messages
+  inside the main row), so you can also go back to an older version of the code afterwards. Leave the table in place; it is ignored.

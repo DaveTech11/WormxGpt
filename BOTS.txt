@@ -1,0 +1,79 @@
+BOT SYSTEM (Settings -> Bots)
+=============================
+Each signed-in user can connect their OWN Telegram bot; Wormx GPT AI answers the people who message it.
+
+How a user sets it up
+  1. Telegram -> @BotFather -> /newbot -> copy the token.
+  2. Wormx GPT -> Settings -> Bots -> Add bot -> paste the token, choose a name / personality / welcome message.
+  3. Open the bot link shown in Settings and say hi.
+
+Server notes
+  - Telegram needs this server reachable over https. The webhook address is built from PUBLIC_URL, then
+    RENDER_EXTERNAL_URL (set automatically on Render), then the request host. Press "Reconnect" in Settings after
+    changing domains.
+  - Tokens are stored encrypted (AES-256-GCM). Key: BOT_TOKEN_KEY, else TELEGRAM_FILES_KEY. Keep it stable - if it
+    changes, saved tokens can no longer be read and the bots must be re-added.
+  - Limits (env): BOT_FREE_LIMIT (2 bots), BOT_PREMIUM_LIMIT (5), BOT_DAILY_LIMIT (200 AI replies per bot per day).
+    Also 20 messages / minute per bot.
+  - Private chats only. Commands: /start, /reset, /help.
+  - Replies use the normal ai() provider chain, so they follow your existing keys and failover.
+  - Conversation memory per chat is kept in RAM only (last 12 messages) and is lost on restart.
+
+AGENT MODE (default on for every bot)
+=====================================
+Instead of one answer per message, the bot can work in steps: think -> use a tool -> read the result -> answer.
+Tools (each can be switched off per bot in Settings -> Bots -> Edit):
+  web_search   fresh facts and news (uses your existing websearch.mjs providers)
+  read_page    reads a public web page someone sends (only public addresses; every redirect is re-checked)
+  calculator   exact maths (digits and + - * / % ^ ( ) only)
+  clock        date and time in any time zone
+  remind       sends a message to the SAME chat later (1 minute to 30 days, max 10 pending per chat)
+  notes        remembers lasting facts per person (max 15, saved in the database, shown to the bot every time)
+Safety
+  - Tool results are treated as untrusted data; the bot is told never to follow instructions found inside them.
+  - Tools can only act inside the chat they were called from. Nothing is sent to any other chat.
+  - Max BOT_AGENT_STEPS tool rounds per message (default 4, up to 8). The daily limit counts messages, not steps.
+Commands in Telegram: /start, /reset (new conversation), /forget (delete notes and cancel reminders), /help.
+Reminders are checked every 15 seconds. On Render's free tier the server sleeps when idle, so a reminder can arrive late
+(it is sent when the server wakes up).
+
+DEVELOPER UPGRADE (Settings -> Bots)
+====================================
+New tools (switch each on/off per bot; no API keys needed):
+  weather    live weather + 3-day forecast for any city (Open-Meteo)
+  currency   live exchange rates / conversion, includes NGN (open.er-api.com)
+  github     stars, forks, language, licence, latest release of any public repo (api.github.com)
+Custom slash commands (up to 12 per bot)
+  Name + description + prompt. "{{input}}" in the prompt is replaced by what the person typed after the command,
+  otherwise the text is added at the end. Reserved: /start /reset /forget /help /stats. Listed in /help automatically.
+Playground
+  Settings -> Bots -> Playground: chat with the bot in the browser. Every tool call is shown with its arguments,
+  result and timing. Nothing is sent to Telegram, reminders/notes are not saved, the daily limit is not used
+  (POST /api/bots/test, 20 messages/minute per bot).
+Analytics
+  Per bot, last 30 days: replies, unique people, average reply time, errors, 14-day chart, top tools.
+  Stored on the bot record (bot.stats); people are stored only as the last 10 characters of the chat id.
+Export / Import
+  Export downloads <bot>.xyronbot.json (name, persona, greeting, tools, commands - never the token).
+  Import applies such a file to an existing bot.
+Tests: tests/botagent.test.mjs (commands, analytics, tools with mocked network, tool trace).
+
+WEBHOOK TOOLS + VOICE REPLIES
+=============================
+Webhook tools (Settings -> Bots -> Edit -> Webhook tools; up to 5 per bot)
+  Expose your OWN API to the bot as a tool. Name + description (tell the AI what to send) + https URL + optional secret.
+  The bot POSTs JSON:  { "tool": "check_order", "input": {...fields the AI chose...}, "bot": {id,name}, "chat_id": "123", "ts": 1760000000 }
+  Headers: X-Wormx-Timestamp and, with a secret, X-Wormx-Signature = "sha256=" + HMAC_SHA256(secret, ts + "." + rawBody).
+  Verify it on your side (reject if the timestamp is older than ~5 minutes). Reply with text or JSON (max ~3.5k chars are used).
+  Safety: public https addresses only (private IPs, localhost and redirects are refused), 10 s timeout, secrets are stored
+  encrypted and never sent back to the browser, replies are treated as untrusted data by the AI. Needs Agent mode on.
+  Names cannot clash with built-in tools. Try it in the Playground first: you see the call, its result and its timing.
+Voice replies (Settings -> Bots -> Edit -> Voice replies)
+  The bot sends its answer as text AND a Telegram voice note (Vortyx Pulse voice API: 7 voices, 3 speeds).
+  People can send /voice to turn the voice notes off/on for themselves. Links, markdown and emoji are removed before speaking;
+  long answers are spoken up to ~900 characters (the text always has the full answer).
+  Env: VORTYX_VOICE_KEY (vp_voice_ key, required), VORTYX_VOICE_URL (optional).
+  ffmpeg: Telegram shows a real round voice message only for OGG/Opus, so the WAV from the API is converted with ffmpeg.
+  Use the `ffmpeg` command if the host has it, otherwise run  npm i ffmpeg-static  (picked up automatically). Without ffmpeg
+  the bot still works: it sends the WAV as a playable file instead. If the voice limit is reached, the text reply still goes out.
+  Not included: understanding voice notes people SEND (the Vortyx API has no speech-to-text).

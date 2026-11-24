@@ -1,0 +1,10 @@
+{
+  "appId": "ai.xryon.app",
+  "appName": "Wormx GPT v5",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://xryon.myng.net",
+    "cleartext": false
+  }
+}

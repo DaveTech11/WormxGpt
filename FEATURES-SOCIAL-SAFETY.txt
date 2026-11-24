@@ -1,0 +1,40 @@
+SOCIAL, SAFETY AND PAYMENT FEATURES   (the AI, models and routing are NOT changed by any of these)
+===============================================================================================
+Backend: features.mjs (one router, hooked in server.mjs right after extras.mjs).  Tests: tests/features.test.mjs (npm test).
+
+SOCIAL
+ 1. Prompt gallery            Settings -> Prompt gallery. Share / search / copy / like / report. First name only is shown.
+                              3 reports hide a prompt until an admin deletes it. Max PROMPTS_PER_DAY (10) shares per person per day.
+ 2. Weekly game leaderboard   Top 10 on the Games hub, resets Monday 00:00 UTC. Wins in Tic-Tac-Toe, Blackjack, War, Ludo, Memory,
+                              Riddles, Trivia, Guess score points. NOTE: games run in the browser, so scores are client-reported; the server
+                              caps points per game, refuses a score within 4 s of the last one and limits plays per week. This stops casual
+                              cheating, not a determined one.
+ 3. Team workspaces           Settings -> Team workspaces. Owner makes a team, shares an 8-letter invite code. Members share chats (read-only
+                              text copy, re-share to update), projects (page link) and bots (name + personality only, NEVER the Telegram
+                              token/secret). Owner can remove people / change code / delete. Limits: 5 teams owned, 25 members, 100 items.
+
+TRUST AND SAFETY
+ 4. Two-factor login          Settings -> Security. Authenticator app (TOTP, RFC 6238) and/or Telegram code, plus 8 one-time backup codes.
+                              Works for email-code, password, phone, Google and account-switch sign-in: the server keeps such a session
+                              "pending" (it authenticates nothing) until /two-factor accepts the code. 8 wrong tries ends the sign-in.
+                              Secrets are encrypted (BOT_TOKEN_KEY / SESSION_SECRET - set one of them!) and kept outside the user object.
+                              Telegram cannot be unlinked while it is your only second factor.
+                              No QR code (would need a new npm package): the app shows the key and an "Open in app" link.
+ 5. Login history + devices   Settings -> Security. Active devices (browser/OS, IP, last active), sign out one or all others, last 30 sign-in
+                              events. A signed-out device is sent to /login within ~20 s. Real session ids never leave the server.
+ 6. Data export               Settings -> Data Controls. JSON or Markdown of all chats + memories (file names only, not files). 5 per hour.
+ 7. Chat lock                 Settings -> Security. PIN (4-6 digits, salted PBKDF2, never sent anywhere) and optional fingerprint/face through
+                              the phone's WebAuthn. Locks on open and after a delay you choose. 5 free tries then growing waits.
+                              It is a lock screen for THIS device (not encryption); "Forgot PIN?" signs out and removes it.
+
+PAYMENTS
+ 8. Pay-as-you-go credits     Settings -> Credits & receipts. Top up the existing wallet (N500+), then buy a 1-day (PASS_DAY_NGN=300) or
+                              7-day (PASS_WEEK_NGN=1500) Premium pass from the wallet. Extends an existing Premium; refused if Premium+.
+ 9. Receipts + history        A receipt (RCT-YYYYMMDD-XXXXXX) is created automatically for every paid top-up, plan, pass and domain, shows the
+                              channel (card / bank transfer / USSD / OPay wallet / crypto / wallet), can be printed or saved as PDF, and is
+                              emailed through Brevo or SMTP if configured (RECEIPT_EMAILS=0 turns email off). Old paid orders get receipts too.
+                              Mobile money here means OPay; Flutterwave NGN checkout offers card, bank transfer, USSD and bank account.
+
+Small edits in existing files: server.mjs (session creation, 2FA gate, hooks, receipt calls, account deletion cleanup),
+payments.mjs (remembers the Flutterwave channel), client.js, Settings.jsx, SettingsNav.jsx, App.jsx, AuthContext.jsx, GameCenter.jsx, GameExtras.jsx.
+Env (all optional): PASS_DAY_NGN, PASS_WEEK_NGN, PROMPTS_PER_DAY, TEAM_MAX_OWNED, TEAM_MAX_MEMBERS, GAME_MAX_PER_DAY, TWOFA_ISSUER, RECEIPT_EMAILS.

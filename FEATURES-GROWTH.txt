@@ -1,0 +1,23 @@
+GROWTH + DEVELOPER FEATURES  (the AI, models and routing are NOT changed by any of these)
+=========================================================================================
+1. Share link (chat menu -> "Share link")
+   Copies https://<site>/s/<token>. The page (src/pages/SharedChat.jsx) is public, read-only, noindex, shows no name/email
+   and no files or pictures - only the text of the chat as it was when shared (a snapshot, max 200 messages).
+   Manage / remove links: Settings -> Invite & share. Revoked links stop working at once. Max 100 active links per person.
+2. Referral rewards (Settings -> Invite & share)
+   Link: /register?ref=CODE. When the friend is signed in (new account, under 48 hours old, one claim per account), BOTH get
+   REFERRAL_DAYS (default 3) days of Premium (an existing subscription is extended instead). A person can earn from up to
+   REFERRAL_MAX (default 10) friends. Self-referral and re-claiming are refused.
+3. Developer API (Settings -> Developer API)
+   Personal keys "xy_live_..." (shown once, only a SHA-256 hash is stored, max 5, revocable).
+     curl https://<site>/v1/chat -H "Authorization: Bearer xy_live_..." -H "Content-Type: application/json" -d '{"input":"Say hello"}'
+   Body: input (string) OR messages [{role,content}] ending with a user message; optional system.
+   Answers come from the same ai() chain the app already uses (no model or routing change).
+   Limits per key: free 6/min and 100/day, Premium 40/min and 3000/day (env API_FREE_PER_MIN, API_FREE_DAILY,
+   API_PREMIUM_PER_MIN, API_PREMIUM_DAILY). 401 bad key, 429 limit, 502 AI unavailable (a failed call is not counted).
+   /v1/chat is exempt from the anti-scrape tool-UA block (curl, python, node) because the Bearer key authenticates it.
+   Not included yet: streaming over the API, CORS (keys must stay server-side on purpose).
+4. Voice picker + speed (voice screen -> settings): 7 Vortyx voices and 3 speeds, remembered on the device.
+   Voices other than the first need a paid Vortyx plan.
+Already in the app before this update (so not rebuilt): streaming replies (chatStream.js), the Usage page, Projects & Domains.
+Tests: tests/extras.test.mjs, tests/webhookvoice.test.mjs, tests/botagent.test.mjs (npm test).

@@ -1,0 +1,23 @@
+Wormx GPT v5 uses Groq for every AI reply (chat, Codex, picture reading).
+
+1. Get a key at https://console.groq.com/keys and add it to .env:
+     GROQ_API_KEY=gsk_your_key_here
+2. Optional: choose up to 4 models, tried in order (slot 1 first; if it fails the next slot answers):
+     GROQ_MODEL_1=llama-3.3-70b-versatile
+     GROQ_MODEL_2=openai/gpt-oss-120b
+     GROQ_MODEL_3=meta-llama/llama-4-scout-17b-16e-instruct
+     GROQ_MODEL_4=llama-3.1-8b-instant
+     GROQ_VISION_MODEL=meta-llama/llama-4-scout-17b-16e-instruct
+3. Restart the server. The log prints "Groq ready: ..." when the key is found.
+Model names change over time: check https://console.groq.com/docs/models if one stops working.
+
+Voice (Wormx GPT Voice and Telegram bot voice notes) also uses Groq text-to-speech:
+  GROQ_TTS_MODEL=canopylabs/orpheus-v1-english   (voices: tara, leah, jess, leo, dan, mia, zac, zoe)
+Accept that model's terms once in the Groq console (Playground > Text to Speech) or voice requests will fail.
+Image generation is NOT on Groq (Groq has no image models); it still uses its own image settings.
+
+Prexzy image provider (optional, tried first for text-to-image, before Gemini/Pollinations):
+  PREXZY_API_KEY=your_key            (or PREXZY_API_KEYS=key1,key2)
+  PREXZY_IMAGE_ENDPOINTS=/ai/flux,/ai/anime     (as many paths as you like, tried in order; use the real paths from prexzyapis.com docs)
+  PREXZY_PROMPT_PARAM=prompt   PREXZY_IMAGE_METHOD=GET   PREXZY_API_URL=https://prexzyapis.com
+Adult/explicit paths (nsfw, porn, hentai, extreme...) are ignored on purpose.
